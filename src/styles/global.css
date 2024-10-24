@@ -1,0 +1,30 @@
+body {
+	font-family: ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica,Apple Color Emoji,Arial,sans-serif,Segoe UI Emoji,Segoe UI Symbol;
+	margin: 0;
+	padding: 0;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+a {
+	text-decoration: none;
+}
+
+textarea {
+	font-family: ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica,Apple Color Emoji,Arial,sans-serif,Segoe UI Emoji,Segoe UI Symbol;
+}
+
+a,
+p,
+textarea {
+	font-size: 1rem;
+	line-height: 1.5;
+}
+
+button {
+	all: unset;
+}
