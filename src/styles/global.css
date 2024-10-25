@@ -1,3 +1,8 @@
+:root {
+	--primary: rgb(193, 39, 45);
+	--primary-hover: rgb(139, 19, 23);
+}
+
 body {
 	font-family: ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica,Apple Color Emoji,Arial,sans-serif,Segoe UI Emoji,Segoe UI Symbol;
 	margin: 0;
@@ -27,4 +32,8 @@ textarea {
 
 button {
 	all: unset;
+}
+
+h3 {
+	margin: 0;
 }
