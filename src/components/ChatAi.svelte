@@ -10,6 +10,7 @@
     let messages = [
       { id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot" },
     ];
+	let isProcessing = false;
 
 	function handleInputChange() {
 		const textarea = document.querySelector("textarea");
@@ -33,17 +34,38 @@
       	  	  	textarea.style.height = "2.7rem";
       	  	}
 		  
-      	  	setTimeout(() => {
-      	  	  	messages = [...messages, { id: messages.length + 1, text: "Gracias por tu mensaje. Estoy procesando tu consulta.", sender: "bot" }];
-      	  	}, 1000);
+			isProcessing = true;
+			simulateBotResponse();
       	}
     };
 
+	function simulateBotResponse() {
+		const botMessage = { id: messages.length + 1, text: "", sender: "bot" };
+		messages = [...messages, botMessage];
+
+		const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor.";
+		
+		const chunks = fullMessage.split(" ");
+
+		chunks.forEach((chunk, index) => {
+			setTimeout(() => {
+				botMessage.text += (botMessage.text ? " " : "") + chunk;
+				messages = [...messages];
+				chatBody.scrollTop = chatBody.scrollHeight;
+				if (index === chunks.length - 1) {
+					isProcessing = false;
+				}
+			}, 150 * index);
+		});
+	}
+
 	function handleKeyDown(event) {
-    	if (event.key === 'Enter' && !event.shiftKey) {
+    	if (!isProcessing && event.key === 'Enter' && !event.shiftKey) {
       		event.preventDefault();
       		handleSendMessage();
-    	}
+    	} else if (isProcessing && event.key === 'Enter' && !event.shiftKey) {
+      		event.preventDefault();
+		}
   	}
 
 	afterUpdate(() => {
@@ -87,7 +109,7 @@
 						on:keydown={handleKeyDown}
 				  		placeholder="Escribe tu mensaje..."
 					></textarea>
-					<button class="send-button" type="submit">
+					<button class="send-button" type="submit" disabled={isProcessing}>
 				  		<Send size={20} />
 					</button>
 				</form>
@@ -95,7 +117,7 @@
 		</div>
     {/if}
   
-    <button class="chat-toggle" on:click={() => isOpen = !isOpen} use:autoAnimate={false}>
+    <button class="chat-toggle" on:click={() => isOpen = !isOpen}>
       	<MessageCircle size={24} />
     </button>
 </div>
@@ -114,7 +136,8 @@
 	    background-color: white;
 	    border-radius: 0.5rem;
 	    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-	    width: 25rem;
+		width: 90vw;
+		max-width: 25rem;
 	    height: 600px;
 	    overflow: hidden;
 	    position: absolute;
@@ -138,8 +161,9 @@
     }
   
     .chat-body {
-		flex-grow: 1; /* Ocupa todo el espacio restante */
+		flex-grow: 1;
       	overflow-y: auto;
+		overflow-x: hidden;
       	padding: 1rem;
       	background-color: #f1f1f1;
 	  	scroll-behavior: smooth;
@@ -148,12 +172,13 @@
     .chat-footer {
       	padding: 1rem;
       	background-color: #f9f9f9;
-		flex-shrink: 0; /* Evita que el footer se reduzca */
+		flex-shrink: 0;
     }
   
     .message {
       	margin-bottom: 1rem;
       	display: flex;
+		word-break: break-word;
     }
   
     .message-bot {
@@ -205,6 +230,13 @@
       	padding: 0.5rem;
       	border-radius: 0.25rem;
       	cursor: pointer;
+
+		
+		&[disabled] {
+            background: var(--primary-hover);
+            opacity: .8;
+            pointer-events: none;
+        }
     }
   
     .send-button:hover {
@@ -246,7 +278,7 @@
 	}
 
 	.chat-body::-webkit-scrollbar {
-	  	width: 6px;
+	  	width: 4px;
 	}
 
 	.chat-body::-webkit-scrollbar-track {
