@@ -1,57 +1,83 @@
-<script>
+<script lang="ts">
 	import autoAnimate from '@formkit/auto-animate';
-    import { X, MessageCircle, Send } from "lucide-svelte";
-	import { afterUpdate } from "svelte";
+	import { X, MessageCircle, Send } from "lucide-svelte";
 	import { fly } from 'svelte/transition';
-  
-    let isOpen = false;
-    let inputMessage = "";
-	let chatBody;
-    let messages = [
-      { id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot" },
-    ];
-	let isProcessing = false;
 
-	function handleInputChange() {
-		const textarea = document.querySelector("textarea");
-		if (textarea) {
-			const offset = textarea.offsetHeight - textarea.clientHeight;
-			textarea.addEventListener("input", () => {
-				textarea.style.height = "2.7rem";
-				textarea.style.height = textarea.scrollHeight + offset + 'px';
-			});
-		}
+	let isOpen = false;
+	let inputMessage = "";
+	let chatBody: HTMLElement;
+	let textArea: HTMLTextAreaElement;
+	let messages = [
+		{ id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot" },
+	];
+	let isDisabled = true;
+	let isProcessing = false;
+	let shouldAutoScroll = true;
+
+	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
+
+	function handleOpen() {
+		let wasOpen = isOpen;
+		isOpen = !isOpen;
+
+		if (!wasOpen && isOpen) {
+    	    setTimeout(scrollToBottom, 0);
+    	}
 	}
 
-    const handleSendMessage = () => {
-      	if (inputMessage.trim() !== "") {
-      	  	messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user" }];
-      	  	inputMessage = "";
-			
-      	  	const textarea = document.querySelector("textarea");
+	function isAtBottom(): boolean {
+	    if (!chatBody) return false;
+	    const threshold = 50;
+		console.log(chatBody.scrollHeight, chatBody.scrollTop, chatBody.clientHeight);
+	    return chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight <= threshold;
+	}
 
-      	  	if (textarea) {
-      	  	  	textarea.style.height = "2.7rem";
-      	  	}
-		  
-			isProcessing = true;
+	function handleScroll() {
+	    shouldAutoScroll = isAtBottom();
+	}
+
+	function scrollToBottom() {
+		if (!chatBody || !shouldAutoScroll) return;
+	    chatBody.scrollTop = chatBody.scrollHeight;
+	}
+	
+
+	function adjustTextareaHeight() {
+		if (!textArea) return;
+		const offset = textArea.offsetHeight - textArea.clientHeight;
+		textArea.style.height = "2.7rem";
+		textArea.style.height = textArea.scrollHeight + offset + 'px';
+	}
+
+	const handleSendMessage = () => {
+		if (inputMessage.trim() !== "") {
+			shouldAutoScroll = true;
+			messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user" }];
+			inputMessage = "";
+
+			if (textArea) {
+				textArea.style.height = "2.7rem";
+			}
+
+			isDisabled = true;
 			simulateBotResponse();
-      	}
-    };
+		}
+	};
 
 	function simulateBotResponse() {
+		isProcessing = true;
 		const botMessage = { id: messages.length + 1, text: "", sender: "bot" };
 		messages = [...messages, botMessage];
 
-		const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor.";
-		
+		const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor. Este es un mensaje de prueba largo para probar el scroll. Te gusta el chat? ¡Me encanta! 😊";
 		const chunks = fullMessage.split(" ");
 
 		chunks.forEach((chunk, index) => {
 			setTimeout(() => {
 				botMessage.text += (botMessage.text ? " " : "") + chunk;
 				messages = [...messages];
-				chatBody.scrollTop = chatBody.scrollHeight;
+				scrollToBottom();
+
 				if (index === chunks.length - 1) {
 					isProcessing = false;
 				}
@@ -59,25 +85,20 @@
 		});
 	}
 
-	function handleKeyDown(event) {
-    	if (!isProcessing && event.key === 'Enter' && !event.shiftKey) {
-      		event.preventDefault();
-      		handleSendMessage();
-    	} else if (isProcessing && event.key === 'Enter' && !event.shiftKey) {
-      		event.preventDefault();
-		}
-  	}
+	function handleKeyDown(event: { key: string; shiftKey: any; preventDefault: () => void; }) {
+	    if (!isDisabled && !isProcessing && event.key === 'Enter' && !event.shiftKey) {
+	        event.preventDefault();
+	        handleSendMessage();
+	    } else if (isDisabled && event.key === 'Enter' && !event.shiftKey) {
+	        event.preventDefault();
+	    }
+	}
 
-	afterUpdate(() => {
-      	if (isOpen) {
-        	handleInputChange();
-      	}
-
-	  	if (chatBody) {
-        	chatBody.scrollTop = chatBody.scrollHeight;
-      	}
-    });
+	function handleInput() {
+    	adjustTextareaHeight();
+	}
 </script>
+
   
 <div class="chat-container">
     {#if isOpen}
@@ -89,7 +110,12 @@
 				</button>
 			</div>
 		
-			<div class="chat-body" use:autoAnimate bind:this={chatBody}>
+			<div
+				bind:this={chatBody}
+				on:scroll={handleScroll}
+				class="chat-body" 
+				use:autoAnimate 
+			>
 				{#each messages as message}
 					<div class="message {message.sender === 'user' ? 'message-user' : 'message-bot'}">
 						<div class="message-text {message.sender === 'user' ? 'message-text-user' : 'message-text-bot'}">
@@ -106,10 +132,12 @@
 				>
 					<textarea
 						bind:value={inputMessage}
+						bind:this={textArea}
 						on:keydown={handleKeyDown}
+						on:input={handleInput}
 				  		placeholder="Escribe tu mensaje..."
 					></textarea>
-					<button class="send-button" type="submit" disabled={isProcessing}>
+					<button class="send-button" type="submit" disabled={isDisabled}>
 				  		<Send size={20} />
 					</button>
 				</form>
@@ -117,7 +145,7 @@
 		</div>
     {/if}
   
-    <button class="chat-toggle" on:click={() => isOpen = !isOpen}>
+    <button class="chat-toggle" on:click={handleOpen}>
       	<MessageCircle size={24} />
     </button>
 </div>
