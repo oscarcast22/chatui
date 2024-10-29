@@ -1,6 +1,7 @@
 <script lang="ts">
 	import autoAnimate from '@formkit/auto-animate';
 	import { X, MessageCircle, Send } from "lucide-svelte";
+  	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
 
 	let isOpen = false;
@@ -8,7 +9,7 @@
 	let chatBody: HTMLElement;
 	let textArea: HTMLTextAreaElement;
 	let messages = [
-		{ id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot" },
+		{ id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot", state: "complete" },
 	];
 	let isDisabled = true;
 	let isProcessing = false;
@@ -16,19 +17,9 @@
 
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
 
-	function handleOpen() {
-		let wasOpen = isOpen;
-		isOpen = !isOpen;
-
-		if (!wasOpen && isOpen) {
-    	    setTimeout(scrollToBottom, 0);
-    	}
-	}
-
 	function isAtBottom(): boolean {
 	    if (!chatBody) return false;
 	    const threshold = 50;
-		console.log(chatBody.scrollHeight, chatBody.scrollTop, chatBody.clientHeight);
 	    return chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight <= threshold;
 	}
 
@@ -37,7 +28,7 @@
 	}
 
 	function scrollToBottom() {
-		if (!chatBody || !shouldAutoScroll) return;
+	    if (!chatBody || (!shouldAutoScroll)) return;
 	    chatBody.scrollTop = chatBody.scrollHeight;
 	}
 	
@@ -52,39 +43,44 @@
 	const handleSendMessage = () => {
 		if (inputMessage.trim() !== "") {
 			shouldAutoScroll = true;
-			messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user" }];
+			messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user", state: "complete" }];
 			inputMessage = "";
 
 			if (textArea) {
 				textArea.style.height = "2.7rem";
 			}
-
 			isDisabled = true;
 			simulateBotResponse();
 		}
 	};
 
 	function simulateBotResponse() {
-		isProcessing = true;
-		const botMessage = { id: messages.length + 1, text: "", sender: "bot" };
-		messages = [...messages, botMessage];
+	    isProcessing = true;
+	    const botMessage = { id: messages.length + 1, text: "", sender: "bot", state: "typing" };
+	    messages = [...messages, botMessage];
 
-		const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor. Este es un mensaje de prueba largo para probar el scroll. Te gusta el chat? ¡Me encanta! 😊";
-		const chunks = fullMessage.split(" ");
+	    const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor. Este es un mensaje de prueba largo para probar el scroll. Te gusta el chat? ¡Me encanta! 😊";
+	    const chunks = fullMessage.split(" ");
 
-		chunks.forEach((chunk, index) => {
-			setTimeout(() => {
-				botMessage.text += (botMessage.text ? " " : "") + chunk;
-				messages = [...messages];
-				scrollToBottom();
-
-				if (index === chunks.length - 1) {
-					isProcessing = false;
-				}
-			}, 150 * index);
-		});
+	    setTimeout(() => {
+	      	chunkBotResponse(chunks, botMessage);
+	    }, 2000);
 	}
 
+	function chunkBotResponse(chunks: string[], botMessage: { id?: number; text: string; sender?: string; state?: string; }) {
+	    chunks.forEach((chunk, index) => {
+	      setTimeout(() => {
+	        botMessage.text += (botMessage.text ? " " : "") + chunk;
+	        messages = [...messages];
+
+	        if (index === chunks.length - 1) {
+	          botMessage.state = "complete";
+	          isProcessing = false;
+	          messages = [...messages];
+	        }
+	      }, 150 * index);
+	    });
+	}
 	function handleKeyDown(event: { key: string; shiftKey: any; preventDefault: () => void; }) {
 	    if (!isDisabled && !isProcessing && event.key === 'Enter' && !event.shiftKey) {
 	        event.preventDefault();
@@ -97,6 +93,10 @@
 	function handleInput() {
     	adjustTextareaHeight();
 	}
+
+	afterUpdate(() => {
+		scrollToBottom();
+	});
 </script>
 
   
@@ -120,6 +120,9 @@
 					<div class="message {message.sender === 'user' ? 'message-user' : 'message-bot'}">
 						<div class="message-text {message.sender === 'user' ? 'message-text-user' : 'message-text-bot'}">
 							{message.text}
+							{#if message.sender === 'bot' && message.state === 'typing'}
+								<span class="typing-indicator">...</span>
+						  	{/if}
 						</div>
 					</div>
 				{/each}
@@ -145,7 +148,7 @@
 		</div>
     {/if}
   
-    <button class="chat-toggle" on:click={handleOpen}>
+    <button class="chat-toggle" on:click={() => isOpen = !isOpen}>
       	<MessageCircle size={24} />
     </button>
 </div>
@@ -165,8 +168,8 @@
 	    border-radius: 0.5rem;
 	    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 		width: 90vw;
+		height: 600px;
 		max-width: 25rem;
-	    height: 600px;
 	    overflow: hidden;
 	    position: absolute;
 	    bottom: 4.5rem;
@@ -189,9 +192,9 @@
     }
   
     .chat-body {
-		flex-grow: 1;
       	overflow-y: auto;
 		overflow-x: hidden;
+		flex-grow: 1;
       	padding: 1rem;
       	background-color: #f1f1f1;
 	  	scroll-behavior: smooth;
@@ -199,8 +202,8 @@
   
     .chat-footer {
       	padding: 1rem;
-      	background-color: #f9f9f9;
 		flex-shrink: 0;
+      	background-color: #f9f9f9;
     }
   
     .message {
@@ -285,6 +288,16 @@
     .chat-toggle:hover {
       	background-color: var(--primary-hover);
     }
+
+	.typing-indicator {
+		animation: typing 0.8s infinite;
+	}
+
+	@keyframes typing {
+	    0% { opacity: 0; }
+	    50% { opacity: 1; }
+	    100% { opacity: 0; }
+	}
 
 	textarea::-webkit-scrollbar {
 	  	width: 4px;
