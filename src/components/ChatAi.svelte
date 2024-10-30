@@ -4,22 +4,38 @@
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
 
-	let isOpen = false;
-	let inputMessage = "";
+	interface Message {
+		id: number;
+		text: string;
+		sender: string;
+		state: string;
+	}
+
 	let chatBody: HTMLElement;
 	let textArea: HTMLTextAreaElement;
-	let messages = [
+	let isOpen: boolean = true;
+	let isDisabled: boolean = true;
+	let isProcessing: boolean = false;
+	let shouldAutoScroll: boolean = true;
+	let inputMessage: string = "";
+	let threshold: number = 50;
+
+	let messages: Message[] = [
 		{ id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot", state: "complete" },
 	];
-	let isDisabled = true;
-	let isProcessing = false;
-	let shouldAutoScroll = true;
 
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
 
+	function handleOpen() {
+		let wasOpen: boolean = isOpen;
+		isOpen = !isOpen;
+		if (!wasOpen && isOpen) {
+			shouldAutoScroll = true;
+    	}
+	}
+
 	function isAtBottom(): boolean {
 	    if (!chatBody) return false;
-	    const threshold = 50;
 	    return chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight <= threshold;
 	}
 
@@ -30,8 +46,8 @@
 	function scrollToBottom() {
 	    if (!chatBody || (!shouldAutoScroll)) return;
 	    chatBody.scrollTop = chatBody.scrollHeight;
+
 	}
-	
 
 	function adjustTextareaHeight() {
 		if (!textArea) return;
@@ -46,9 +62,7 @@
 			messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user", state: "complete" }];
 			inputMessage = "";
 
-			if (textArea) {
-				textArea.style.height = "2.7rem";
-			}
+			textArea.style.height = "2.7rem";
 			isDisabled = true;
 			simulateBotResponse();
 		}
@@ -56,7 +70,7 @@
 
 	function simulateBotResponse() {
 	    isProcessing = true;
-	    const botMessage = { id: messages.length + 1, text: "", sender: "bot", state: "typing" };
+	    const botMessage = { id: messages.length + 1, text: "", sender: "bot", state: "waiting" };
 	    messages = [...messages, botMessage];
 
 	    const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor. Este es un mensaje de prueba largo para probar el scroll. Te gusta el chat? ¡Me encanta! 😊";
@@ -72,15 +86,17 @@
 	      setTimeout(() => {
 	        botMessage.text += (botMessage.text ? " " : "") + chunk;
 	        messages = [...messages];
+			botMessage.state = "typing";
 
 	        if (index === chunks.length - 1) {
-	          botMessage.state = "complete";
-	          isProcessing = false;
-	          messages = [...messages];
+	          	botMessage.state = "complete";
+	          	isProcessing = false;
+	          	messages = [...messages];
 	        }
 	      }, 150 * index);
 	    });
 	}
+
 	function handleKeyDown(event: { key: string; shiftKey: any; preventDefault: () => void; }) {
 	    if (!isDisabled && !isProcessing && event.key === 'Enter' && !event.shiftKey) {
 	        event.preventDefault();
@@ -120,9 +136,16 @@
 					<div class="message {message.sender === 'user' ? 'message-user' : 'message-bot'}">
 						<div class="message-text {message.sender === 'user' ? 'message-text-user' : 'message-text-bot'}">
 							{message.text}
-							{#if message.sender === 'bot' && message.state === 'typing'}
-								<span class="typing-indicator">...</span>
+							{#if message.sender === 'bot' && message.state === 'waiting'}
+								<span class="waiting-indicator">
+									<span>●</span>
+									<span>●</span>
+									<span>●</span>
+								</span>
 						  	{/if}
+							{#if message.sender === 'bot' && message.state === 'typing'}
+								<span class="typing-indicator">&#11044;</span>
+							{/if}
 						</div>
 					</div>
 				{/each}
@@ -140,15 +163,17 @@
 						on:input={handleInput}
 				  		placeholder="Escribe tu mensaje..."
 					></textarea>
-					<button class="send-button" type="submit" disabled={isDisabled}>
-				  		<Send size={20} />
+					<button class="send-button" type="submit" disabled={isDisabled} aria-label="Enviar mensaje">
+						<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+							<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/>
+						</svg>  
 					</button>
 				</form>
 			</div>
 		</div>
     {/if}
   
-    <button class="chat-toggle" on:click={() => isOpen = !isOpen}>
+    <button class="chat-toggle" on:click={handleOpen}>
       	<MessageCircle size={24} />
     </button>
 </div>
@@ -201,9 +226,9 @@
     }
   
     .chat-footer {
-      	padding: 1rem;
+      	padding: .5rem;
 		flex-shrink: 0;
-      	background-color: #f9f9f9;
+      	background-color: #f1f1f1;
     }
   
     .message {
@@ -240,39 +265,54 @@
   
     .textarea-container {
       	display: flex;
-      	align-items: flex-end;
+		border-radius: 1.8rem;
+		border: 1px solid #aaaaaa;
       	gap: 0.5rem;
+		align-items: center;
+		padding: 0.4rem;
+		background-color: white;
     }
   
     textarea {
       	flex-grow: 1;
       	padding: 0.5rem;
-      	border: 1px solid #ddd;
+		background-color: transparent;
+      	border: none;
       	border-radius: 0.25rem;
+		outline: none;
       	resize: none;
       	overflow: auto;
       	height: 2.7rem;
       	max-height: 5.4rem;
     }
-  
-    .send-button {
-      	background-color: var(--primary);
-      	color: white;
-      	padding: 0.5rem;
-      	border-radius: 0.25rem;
-      	cursor: pointer;
 
+
+  
+	.send-button {
+		background-color: var(--primary);
+		color: white;
+		padding: 0.4rem;
+		border-radius: 50%;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		
 		&[disabled] {
-            background: var(--primary-hover);
-            opacity: .8;
-            pointer-events: none;
-        }
-    }
+			background: var(--primary-hover);
+			opacity: .8;
+			pointer-events: none;
+		}
+	}
   
     .send-button:hover {
       	background-color: var(--primary-hover);
     }
+
+	.send-button svg {
+		height: 1.7rem;
+		width: 1.7rem;
+	}
   
     .chat-toggle {
       	background-color: var(--primary);
@@ -289,14 +329,37 @@
       	background-color: var(--primary-hover);
     }
 
-	.typing-indicator {
-		animation: typing 0.8s infinite;
+
+
+	.waiting-indicator span {
+	    opacity: 0;
+	    animation: blink 1.5s infinite; /* La duración total de la animación */
 	}
 
-	@keyframes typing {
-	    0% { opacity: 0; }
-	    50% { opacity: 1; }
-	    100% { opacity: 0; }
+	/* Animación para hacer parpadear los puntos */
+	@keyframes blink {
+	    0%, 20% {
+	        opacity: 0; /* Comienza invisible */
+	    }
+	    30%, 50% {
+	        opacity: 1; /* Visible en estos puntos */
+	    }
+	    100% {
+	        opacity: 0; /* Termina invisible */
+	    }
+	}
+
+	/* Agregar un delay a cada punto */
+	.waiting-indicator span:nth-child(1) {
+	    animation-delay: 0s; /* Sin retraso */
+	}
+
+	.waiting-indicator span:nth-child(2) {
+	    animation-delay: 0.3s; /* 300ms de retraso */
+	}
+
+	.waiting-indicator span:nth-child(3) {
+	    animation-delay: 0.6s; /* 600ms de retraso */
 	}
 
 	textarea::-webkit-scrollbar {
