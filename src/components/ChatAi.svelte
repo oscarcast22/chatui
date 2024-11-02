@@ -106,6 +106,14 @@
 
 	        const reader = response.body.getReader();
 	        const decoder = new TextDecoder("utf-8");
+
+			// Inicialmente, indicamos que el bot está "escribiendo"
+			botMessage.state = "typing"; 
+        	messages = [...messages]; 
+
+        	// Agregar el indicador de "escribiendo" al mensaje
+        	botMessage.text += " <span>&#11044;</span>"; // Agregar el typing indicator inicialmente
+        	messages = [...messages]; // Actualizar el mensaje en la interfaz
 		
 	        while (true) {
 	            const { done, value } = await reader.read();
@@ -125,7 +133,7 @@
 				
 	                const data = JSON.parse(line.replace(/^data:\s*/, ""));
 	                botMessage.state = "typing";
-	                botMessage.text += data.response;
+	                botMessage.text = botMessage.text.replace(/ <span>&#11044;<\/span>/, '') + data.response + ' <span>&#11044;</span>';
 	                messages = [...messages];
 	                scrollToBottom();
 	            }
@@ -136,6 +144,7 @@
 	    } finally {
 	        isProcessing = false;
 			botMessage.state = "complete";
+			botMessage.text = botMessage.text.replace(/ <span>&#11044;<\/span>/, '');
 			console.log(botMessage);
 	        messages = [...messages];
 	    }
@@ -183,9 +192,6 @@
 						>
 							{#if message.sender === 'bot'}
 								{@html marked(message.text)}
-								{#if message.state === 'typing'}
-									<span class="typing-indicator">&#11044;</span>
-								{/if}
 							{:else}
 								{message.text}
 							{/if}
