@@ -1,6 +1,7 @@
 <script lang="ts">
 	import autoAnimate from '@formkit/auto-animate';
-	import { X, MessageCircle, Send } from "lucide-svelte";
+	import { marked } from 'marked';
+	import { X, MessageCircle } from "lucide-svelte";
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
 
@@ -60,41 +61,84 @@
 		if (inputMessage.trim() !== "") {
 			shouldAutoScroll = true;
 			messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user", state: "complete" }];
+			
+			invokeAIResponse();
+			
 			inputMessage = "";
-
 			textArea.style.height = "2.7rem";
+
 			isDisabled = true;
-			simulateBotResponse();
+
 		}
 	};
 
-	function simulateBotResponse() {
+	// Invoca la API y muestra los fragmentos en tiempo real
+	async function invokeAIResponse() {
 	    isProcessing = true;
 	    const botMessage = { id: messages.length + 1, text: "", sender: "bot", state: "waiting" };
 	    messages = [...messages, botMessage];
 
-	    const fullMessage = "Gracias por tu mensaje. Estoy procesando tu consulta... Un momento, por favor. Este es un mensaje de prueba largo para probar el scroll. Te gusta el chat? ¡Me encanta! 😊";
-	    const chunks = fullMessage.split(" ");
+	    const endpoint = `https://worker-ai-test.oscar-cm.workers.dev/query?text=${encodeURIComponent(inputMessage)}`;
+		
+	    try {
+	        const response = await fetch(endpoint, {
+	            method: "GET",
+	            headers: {
+	                "Content-Type": "application/json",
+	            }
+	        });
 
-	    setTimeout(() => {
-	      	chunkBotResponse(chunks, botMessage);
-	    }, 2000);
-	}
-
-	function chunkBotResponse(chunks: string[], botMessage: { id?: number; text: string; sender?: string; state?: string; }) {
-	    chunks.forEach((chunk, index) => {
-	      setTimeout(() => {
-	        botMessage.text += (botMessage.text ? " " : "") + chunk;
-	        messages = [...messages];
-			botMessage.state = "typing";
-
-	        if (index === chunks.length - 1) {
-	          	botMessage.state = "complete";
-	          	isProcessing = false;
-	          	messages = [...messages];
+	        if (!response.ok) {
+	            console.error("Error en la respuesta:", response.statusText);
+	            botMessage.state = "error";
+	            isProcessing = false;
+	            messages = [...messages];
+	            return;
 	        }
-	      }, 150 * index);
-	    });
+
+			if (!response.body) {
+				console.error("La respuesta no tiene cuerpo (response.body es null).");
+				botMessage.state = "error";
+				isProcessing = false;
+				messages = [...messages];
+				return;
+			}
+
+	        const reader = response.body.getReader();
+	        const decoder = new TextDecoder("utf-8");
+		
+	        while (true) {
+	            const { done, value } = await reader.read();
+	            if (done) break;
+			
+	            const chunk = decoder.decode(value, { stream: true });
+	            const lines = chunk.split("\n").filter(line => line.trim());
+				console.log(lines);
+
+	            for (const line of lines) {
+	                if (line === "data: [DONE]") {
+	                    botMessage.state = "complete";
+	                    isProcessing = false;
+	                    messages = [...messages];
+	                    return;
+	                }
+				
+	                const data = JSON.parse(line.replace(/^data:\s*/, ""));
+	                botMessage.state = "typing";
+	                botMessage.text += data.response;
+	                messages = [...messages];
+	                scrollToBottom();
+	            }
+	        }
+	    } catch (error) {
+	        console.error("Error en la conexión de fetch:", error);
+	        botMessage.state = "error";
+	    } finally {
+	        isProcessing = false;
+			botMessage.state = "complete";
+			console.log(botMessage);
+	        messages = [...messages];
+	    }
 	}
 
 	function handleKeyDown(event: { key: string; shiftKey: any; preventDefault: () => void; }) {
@@ -134,8 +178,17 @@
 			>
 				{#each messages as message}
 					<div class="message {message.sender === 'user' ? 'message-user' : 'message-bot'}">
-						<div class="message-text {message.sender === 'user' ? 'message-text-user' : 'message-text-bot'}">
-							{message.text}
+						<div 
+							class="message-text {message.sender === 'user' ? 'message-text-user' : 'message-text-bot'}"
+						>
+							{#if message.sender === 'bot'}
+								{@html marked(message.text)}
+								{#if message.state === 'typing'}
+									<span class="typing-indicator">&#11044;</span>
+								{/if}
+							{:else}
+								{message.text}
+							{/if}
 							{#if message.sender === 'bot' && message.state === 'waiting'}
 								<span class="waiting-indicator">
 									<span>●</span>
@@ -143,9 +196,6 @@
 									<span>●</span>
 								</span>
 						  	{/if}
-							{#if message.sender === 'bot' && message.state === 'typing'}
-								<span class="typing-indicator">&#11044;</span>
-							{/if}
 						</div>
 					</div>
 				{/each}
@@ -328,8 +378,6 @@
     .chat-toggle:hover {
       	background-color: var(--primary-hover);
     }
-
-
 
 	.waiting-indicator span {
 	    opacity: 0;
