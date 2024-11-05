@@ -4,13 +4,7 @@
 	import { X, MessageCircle } from "lucide-svelte";
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
-
-	interface Message {
-		id: number;
-		text: string;
-		sender: string;
-		state: string;
-	}
+	import { chatStore } from '@/stores/chatStore';
 
 	let chatBody: HTMLElement;
 	let textArea: HTMLTextAreaElement;
@@ -21,11 +15,138 @@
 	let inputMessage: string = "";
 	let threshold: number = 50;
 
-	let messages: Message[] = [
-		{ id: 1, text: "¡Hola! ¿En qué puedo ayudarte hoy?", sender: "bot", state: "complete" },
-	];
-
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
+
+	interface Message {
+    	id: number;
+    	content: string;
+    	role: string;
+    	state: string;
+	}
+
+    let messages: Message[] = [];
+    chatStore.subscribe(store => {
+        messages = store.messages;
+    });
+
+	function formatMessagesForApi(messages: Message[]): any[] {
+	    return messages.map(({ role, content }) => ({
+	        role,
+	        content,
+	    }));
+	}
+
+    const handleSendMessage = () => {
+        if (inputMessage.trim() !== "") {
+            shouldAutoScroll = true;
+            
+            chatStore.addMessage({
+                id: messages.length + 1,
+                content: inputMessage,
+                role: "user",
+                state: "complete"
+            });
+            
+            invokeAIResponse();
+            
+            inputMessage = "";
+            textArea.style.height = "2.7rem";
+            isDisabled = true;
+        }
+    };
+
+    async function invokeAIResponse() {
+        isProcessing = true;
+        
+        chatStore.addMessage({
+            id: messages.length + 1,
+            content: "",
+            role: "assistant",
+            state: "waiting"
+        });
+
+        const endpoint = `https://worker-ai-test.oscar-cm.workers.dev/`;
+
+		const formattedMessages = formatMessagesForApi(messages);
+        
+        try {
+			const response = await fetch(endpoint, {
+    		    method: "POST",
+    		    headers: {
+    		        "Content-Type": "application/json",
+    		    },
+    		    body: JSON.stringify({ messages: formattedMessages })
+    		});
+
+            if (!response.ok) {
+                console.error("Error en la respuesta:", response.statusText);
+                chatStore.updateLastMessage({ state: "error" });
+                isProcessing = false;
+                return;
+            }
+
+            if (!response.body) {
+                console.error("La respuesta no tiene cuerpo (response.body es null).");
+                chatStore.updateLastMessage({ state: "error" });
+                isProcessing = false;
+                return;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            // Update bot message state to typing
+            chatStore.updateLastMessage({
+                state: "typing",
+                content: " <span>&#11044;</span>"
+            });
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split("\n").filter(line => line.trim());
+
+                for (const line of lines) {
+                    if (line === "data: [DONE]") {
+                        chatStore.updateLastMessage({
+                            state: "complete",
+                            content: messages[messages.length - 1].content.replace(/ <span>&#11044;<\/span>/, '')
+                        });
+                        isProcessing = false;
+                        return;
+                    }
+
+                    const data = JSON.parse(line.replace(/^data:\s*/, ""));
+                    const currentText = messages[messages.length - 1].content.replace(/ <span>&#11044;<\/span>/, '');
+                    chatStore.updateLastMessage({
+                        state: "typing",
+                        content: currentText + data.response + ' <span>&#11044;</span>'
+                    });
+                    scrollToBottom();
+                }
+            }
+        } catch (error) {
+            console.error("Error en la conexión de fetch:", error);
+            chatStore.updateLastMessage({ state: "error" });
+        } finally {
+            isProcessing = false;
+            chatStore.updateLastMessage({
+                state: "complete",
+                content: messages[messages.length - 1].content.replace(/ <span>&#11044;<\/span>/, '')
+            });
+        }
+    }
+
+	function handleKeyDown(event: { key: string; shiftKey: any; preventDefault: () => void; }) {
+	    if (!isDisabled && !isProcessing && event.key === 'Enter' && !event.shiftKey) {
+	        event.preventDefault();
+	        handleSendMessage();
+	    } else if (isDisabled && event.key === 'Enter' && !event.shiftKey) {
+	        event.preventDefault();
+	    }
+	}
 
 	function handleOpen() {
 		let wasOpen: boolean = isOpen;
@@ -57,108 +178,6 @@
 		textArea.style.height = textArea.scrollHeight + offset + 'px';
 	}
 
-	const handleSendMessage = () => {
-		if (inputMessage.trim() !== "") {
-			shouldAutoScroll = true;
-			messages = [...messages, { id: messages.length + 1, text: inputMessage, sender: "user", state: "complete" }];
-			
-			invokeAIResponse();
-			
-			inputMessage = "";
-			textArea.style.height = "2.7rem";
-
-			isDisabled = true;
-
-		}
-	};
-
-	// Invoca la API y muestra los fragmentos en tiempo real
-	async function invokeAIResponse() {
-	    isProcessing = true;
-	    const botMessage = { id: messages.length + 1, text: "", sender: "bot", state: "waiting" };
-	    messages = [...messages, botMessage];
-
-	    const endpoint = `https://worker-ai-test.oscar-cm.workers.dev/query?text=${encodeURIComponent(inputMessage)}`;
-		
-	    try {
-	        const response = await fetch(endpoint, {
-	            method: "GET",
-	            headers: {
-	                "Content-Type": "application/json",
-	            }
-	        });
-
-	        if (!response.ok) {
-	            console.error("Error en la respuesta:", response.statusText);
-	            botMessage.state = "error";
-	            isProcessing = false;
-	            messages = [...messages];
-	            return;
-	        }
-
-			if (!response.body) {
-				console.error("La respuesta no tiene cuerpo (response.body es null).");
-				botMessage.state = "error";
-				isProcessing = false;
-				messages = [...messages];
-				return;
-			}
-
-	        const reader = response.body.getReader();
-	        const decoder = new TextDecoder("utf-8");
-
-			// Inicialmente, indicamos que el bot está "escribiendo"
-			botMessage.state = "typing"; 
-        	messages = [...messages]; 
-
-        	// Agregar el indicador de "escribiendo" al mensaje
-        	botMessage.text += " <span>&#11044;</span>"; // Agregar el typing indicator inicialmente
-        	messages = [...messages]; // Actualizar el mensaje en la interfaz
-		
-	        while (true) {
-	            const { done, value } = await reader.read();
-	            if (done) break;
-			
-	            const chunk = decoder.decode(value, { stream: true });
-	            const lines = chunk.split("\n").filter(line => line.trim());
-				console.log(lines);
-
-	            for (const line of lines) {
-	                if (line === "data: [DONE]") {
-	                    botMessage.state = "complete";
-	                    isProcessing = false;
-	                    messages = [...messages];
-	                    return;
-	                }
-				
-	                const data = JSON.parse(line.replace(/^data:\s*/, ""));
-	                botMessage.state = "typing";
-	                botMessage.text = botMessage.text.replace(/ <span>&#11044;<\/span>/, '') + data.response + ' <span>&#11044;</span>';
-	                messages = [...messages];
-	                scrollToBottom();
-	            }
-	        }
-	    } catch (error) {
-	        console.error("Error en la conexión de fetch:", error);
-	        botMessage.state = "error";
-	    } finally {
-	        isProcessing = false;
-			botMessage.state = "complete";
-			botMessage.text = botMessage.text.replace(/ <span>&#11044;<\/span>/, '');
-			console.log(botMessage);
-	        messages = [...messages];
-	    }
-	}
-
-	function handleKeyDown(event: { key: string; shiftKey: any; preventDefault: () => void; }) {
-	    if (!isDisabled && !isProcessing && event.key === 'Enter' && !event.shiftKey) {
-	        event.preventDefault();
-	        handleSendMessage();
-	    } else if (isDisabled && event.key === 'Enter' && !event.shiftKey) {
-	        event.preventDefault();
-	    }
-	}
-
 	function handleInput() {
     	adjustTextareaHeight();
 	}
@@ -186,16 +205,16 @@
 				use:autoAnimate 
 			>
 				{#each messages as message}
-					<div class="message {message.sender === 'user' ? 'message-user' : 'message-bot'}">
+					<div class="message {message.role === 'user' ? 'message-user' : 'message-bot'}">
 						<div 
-							class="message-text {message.sender === 'user' ? 'message-text-user' : 'message-text-bot'}"
+							class="message-text {message.role === 'user' ? 'message-text-user' : 'message-text-bot'}"
 						>
-							{#if message.sender === 'bot'}
-								{@html marked(message.text)}
+							{#if message.role === 'assistant'}
+								{@html marked(message.content)}
 							{:else}
-								{message.text}
+								{message.content}
 							{/if}
-							{#if message.sender === 'bot' && message.state === 'waiting'}
+							{#if message.role === 'assistant' && message.state === 'waiting'}
 								<span class="waiting-indicator">
 									<span>●</span>
 									<span>●</span>
