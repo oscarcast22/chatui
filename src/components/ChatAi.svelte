@@ -1,14 +1,14 @@
 <script lang="ts">
 	import autoAnimate from '@formkit/auto-animate';
 	import { marked } from 'marked';
-	import { X, MessageCircle } from "lucide-svelte";
+	import { X, MessageCircle, Trash } from "lucide-svelte";
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { chatStore } from '@/stores/chatStore';
 
 	let chatBody: HTMLElement;
 	let textArea: HTMLTextAreaElement;
-	let isOpen: boolean = true;
+	let isOpen: boolean = false;
 	let isDisabled: boolean = true;
 	let isProcessing: boolean = false;
 	let shouldAutoScroll: boolean = true;
@@ -29,8 +29,14 @@
         messages = store.messages;
     });
 
-	function formatMessagesForApi(messages: Message[]): any[] {
-	    return messages.map(({ role, content }) => ({
+	function clearHistory() {
+        if (confirm('¿Estás seguro de que deseas borrar todo el historial de chat?')) {
+            chatStore.clearStorage();
+        }
+    }
+
+	function formatMessagesForApi(messages: Message[]) {
+	    return messages.slice(0, -1).map(({ role, content }) => ({
 	        role,
 	        content,
 	    }));
@@ -95,12 +101,6 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
 
-            // Update bot message state to typing
-            chatStore.updateLastMessage({
-                state: "typing",
-                content: " <span>&#11044;</span>"
-            });
-
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -110,19 +110,15 @@
 
                 for (const line of lines) {
                     if (line === "data: [DONE]") {
-                        chatStore.updateLastMessage({
-                            state: "complete",
-                            content: messages[messages.length - 1].content.replace(/ <span>&#11044;<\/span>/, '')
-                        });
                         isProcessing = false;
                         return;
                     }
 
                     const data = JSON.parse(line.replace(/^data:\s*/, ""));
-                    const currentText = messages[messages.length - 1].content.replace(/ <span>&#11044;<\/span>/, '');
+                    const currentText = messages[messages.length - 1].content;
                     chatStore.updateLastMessage({
                         state: "typing",
-                        content: currentText + data.response + ' <span>&#11044;</span>'
+                        content: currentText + data.response
                     });
                     scrollToBottom();
                 }
@@ -134,7 +130,7 @@
             isProcessing = false;
             chatStore.updateLastMessage({
                 state: "complete",
-                content: messages[messages.length - 1].content.replace(/ <span>&#11044;<\/span>/, '')
+                content: messages[messages.length - 1].content
             });
         }
     }
@@ -193,9 +189,14 @@
 		<div class="chat-box" transition:fly={{ y: 200, opacity: 0, duration: 300 }}>
 			<div class="chat-header">
 				<h3>Lobo AI</h3>
-				<button on:click={() => isOpen = false}>
-					<X size={20} />
-				</button>
+				<div>
+					<button on:click={clearHistory} aria-label="Borrar historial">
+						<Trash size={20} />
+					</button>
+					<button on:click={() => isOpen = false} aria-label="Cerrar chat">
+						<X size={20} />
+					</button>
+				</div>
 			</div>
 		
 			<div
