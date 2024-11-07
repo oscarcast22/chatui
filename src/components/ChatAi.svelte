@@ -14,7 +14,6 @@
 	let shouldAutoScroll: boolean = true;
 	let inputMessage: string = "";
 	let threshold: number = 20;
-	let delay: number = 50;
 
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
 
@@ -117,8 +116,6 @@
 
                     const data = JSON.parse(line.replace(/^data:\s*/, ""));
                     const currentText = messages[messages.length - 1].content;
-
-					await new Promise(resolve => setTimeout(resolve, delay));
 
                     chatStore.updateLastMessage({
                         state: "typing",
