@@ -13,7 +13,8 @@
 	let isProcessing: boolean = false;
 	let shouldAutoScroll: boolean = true;
 	let inputMessage: string = "";
-	let threshold: number = 50;
+	let threshold: number = 20;
+	let delay: number = 50;
 
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
 
@@ -116,6 +117,9 @@
 
                     const data = JSON.parse(line.replace(/^data:\s*/, ""));
                     const currentText = messages[messages.length - 1].content;
+
+					await new Promise(resolve => setTimeout(resolve, delay));
+
                     chatStore.updateLastMessage({
                         state: "typing",
                         content: currentText + data.response
@@ -182,7 +186,6 @@
 		scrollToBottom();
 	});
 </script>
-
   
 <div class="chat-container">
     {#if isOpen}
@@ -324,7 +327,6 @@
     .message-text {
       	padding: 0.75rem;
       	border-radius: 0.5rem;
-      	max-width: 70%;
     }
   
     .message-text-bot {
@@ -337,6 +339,7 @@
       	background-color: var(--primary);
       	color: white;
       	border-top-right-radius: 0;
+      	max-width: 70%;
     }
   
     .textarea-container {
@@ -361,8 +364,6 @@
       	height: 2.7rem;
       	max-height: 5.4rem;
     }
-
-
   
 	.send-button {
 		background-color: var(--primary);
