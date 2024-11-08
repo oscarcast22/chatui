@@ -13,7 +13,7 @@
 	let isProcessing: boolean = false;
 	let shouldAutoScroll: boolean = true;
 	let inputMessage: string = "";
-	let threshold: number = 20;
+	let threshold: number = 0;
 
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
 
