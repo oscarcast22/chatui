@@ -1,6 +1,7 @@
 ---
 import '@/styles/global.css';
 import ChatAi from '@/components/ChatAi.svelte';
+import SendNotes from '@/components/SendNotes.svelte';
 ---
 
 <html lang="en">
@@ -9,9 +10,10 @@ import ChatAi from '@/components/ChatAi.svelte';
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Chat IA</title>
+		<title>Chat IA Admin</title>
 	</head>
 	<body>
+		<SendNotes client:load/>
 		<ChatAi client:load />
 	</body>
 </html>
