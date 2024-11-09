@@ -28,7 +28,7 @@ function loadFromStorage(): ChatStore {
     
     return {
         messages: [
-            { id: 1, content: "¡Hola! ¿En qué puedo ayudarte hoy?", role: "assistant", state: "complete" }
+            { id: 1, content: "¡Hola! Bienvenido, soy LobAi, el asistente virtual de la UAD ¿En qué puedo ayudarte hoy?", role: "assistant", state: "complete" }
         ]
     };
 }
@@ -75,7 +75,7 @@ function createChatStore() {
                 localStorage.removeItem(STORAGE_KEY);
                 set({
                     messages: [
-                        { id: 1, content: "¡Hola! ¿En qué puedo ayudarte hoy?", role: "assistant", state: "complete" }
+                        { id: 1, content: "¡Hola! Bienvenido, soy LobAi, el asistente virtual de la UAD ¿En qué puedo ayudarte hoy?", role: "assistant", state: "complete" }
                     ]
                 });
             } catch (error) {

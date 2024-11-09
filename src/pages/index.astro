@@ -1,6 +1,7 @@
 ---
 import '@/styles/global.css';
 import ChatAi from '@/components/ChatAi.svelte';
+import SendNotes from '@/components/SendNotes.svelte';
 ---
 
 <html lang="en">
@@ -12,6 +13,7 @@ import ChatAi from '@/components/ChatAi.svelte';
 		<title>Chat IA</title>
 	</head>
 	<body>
+		<SendNotes client:load/>
 		<ChatAi client:load />
 	</body>
 </html>
