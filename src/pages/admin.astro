@@ -1,19 +1,11 @@
 ---
 import '@/styles/global.css';
+import BaseLayout from '@/layouts/BaseLayout.astro';
 import ChatAi from '@/components/ChatAi.svelte';
 import SendNotes from '@/components/SendNotes.svelte';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Chat IA Admin</title>
-	</head>
-	<body>
-		<SendNotes client:load/>
-		<ChatAi client:load />
-	</body>
-</html>
+<BaseLayout title="Chat UI Admin" description="Chat-Widget for llm">
+	<SendNotes client:load/>
+	<ChatAi client:load />
+</BaseLayout>

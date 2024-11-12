@@ -1,6 +1,5 @@
 <script lang="ts">
-	import autoAnimate from '@formkit/auto-animate';
-	import { marked } from 'marked';
+	import SvelteMarkdown from 'svelte-markdown';
 	import { X, MessageCircle, Trash } from "lucide-svelte";
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
@@ -8,12 +7,12 @@
 
 	let chatBody: HTMLElement;
 	let textArea: HTMLTextAreaElement;
-	let isOpen: boolean = false;
+	let isOpen: boolean = true;
 	let isDisabled: boolean = true;
 	let isProcessing: boolean = false;
 	let shouldAutoScroll: boolean = true;
 	let inputMessage: string = "";
-	let threshold: number = 25;
+	let threshold: number = 30;
 
 	$: isDisabled = isProcessing || inputMessage.trim().length === 0;
 
@@ -45,6 +44,7 @@
     const handleSendMessage = () => {
         if (inputMessage.trim() !== "") {
             shouldAutoScroll = true;
+			scrollToBottom();
             
             chatStore.addMessage({
                 id: messages.length + 1,
@@ -56,7 +56,7 @@
             invokeAIResponse();
             
             inputMessage = "";
-            textArea.style.height = "2.7rem";
+            textArea.style.height = "2rem";
             isDisabled = true;
         }
     };
@@ -171,7 +171,7 @@
 	function adjustTextareaHeight() {
 		if (!textArea) return;
 		const offset = textArea.offsetHeight - textArea.clientHeight;
-		textArea.style.height = "2.7rem";
+		textArea.style.height = "2rem";
 		textArea.style.height = textArea.scrollHeight + offset + 'px';
 	}
 
@@ -203,15 +203,14 @@
 				bind:this={chatBody}
 				on:scroll={handleScroll}
 				class="chat-body" 
-				use:autoAnimate 
 			>
 				{#each messages as message}
-					<div class="message {message.role === 'user' ? 'message-user' : 'message-bot'}">
+					<div class="message {message.role === 'user' ? 'message-user' : 'message-ia'}" transition:fly={{ y: 200, opacity: 0, duration: 380 }}>
 						<div 
-							class="message-text {message.role === 'user' ? 'message-text-user' : 'message-text-bot'}"
+							class="message-text {message.role === 'user' ? 'message-text-user' : 'message-text-ia'}"
 						>
 							{#if message.role === 'assistant'}
-								{@html marked(message.content)}
+								<SvelteMarkdown source={message.content} />
 							{:else}
 								{message.content}
 							{/if}
@@ -264,6 +263,7 @@
     
 	.chat-box {
 	    display: flex;
+		scroll-behavior: smooth;
 	    flex-direction: column;
 	    background-color: white;
 	    border-radius: 0.5rem;
@@ -278,14 +278,17 @@
 	}
   
     .chat-header {
-      	background-color: var(--primary);
-      	color: white;
+      	background-color: var(--chat-body-bg);
       	padding: 1rem;
       	display: flex;
       	justify-content: space-between;
 		height: 4rem;
 		flex-shrink: 0;
 		align-items: center;
+		box-shadow: 
+			0 1px 2px rgba(0, 0, 0, .1),
+			0 -1px rgba(0, 0, 0, .1) inset,
+			0 2px 1px 1px rgba(255, 255, 255, .5) inset;
 
 	  	button {
 			cursor: pointer;
@@ -296,24 +299,27 @@
       	overflow-y: auto;
 		overflow-x: hidden;
 		flex-grow: 1;
-      	padding: 1rem;
-      	background-color: #f1f1f1;
-	  	scroll-behavior: smooth;
+      	background-color: var(--chat-body-bg);
+		padding: 0 1rem 0;
     }
+
+	.chat-body > :last-child {
+		margin-bottom: 1rem;
+	}
   
     .chat-footer {
-      	padding: .5rem;
+      	padding: .8rem .5rem;
 		flex-shrink: 0;
-      	background-color: #f1f1f1;
+      	background-color: var(--chat-body-bg);
     }
   
     .message {
-      	margin-bottom: 1rem;
       	display: flex;
 		word-break: break-word;
+		margin-top: 1rem;
     }
   
-    .message-bot {
+    .message-ia {
       	justify-content: start;
     }
   
@@ -326,10 +332,19 @@
       	border-radius: 0.5rem;
     }
   
-    .message-text-bot {
-      	background-color: #f1f1f1;
+    .message-text-ia {
+      	background-color: #f0f0f0;
       	color: #333;
       	border-top-left-radius: 0;
+		max-width: 90%;
+    }
+
+    :global(.message-text-ia > *:first-child) {
+        margin-top: 0;
+    }
+
+    :global(.message-text-ia > *:last-child) {
+        margin-bottom: 0;
     }
   
     .message-text-user {
@@ -342,23 +357,21 @@
     .textarea-container {
       	display: flex;
 		border-radius: 1.8rem;
-		border: 1px solid #aaaaaa;
       	gap: 0.5rem;
 		align-items: center;
-		padding: 0.4rem;
-		background-color: white;
+		padding: 0.5rem;
+		background-color: #f0f0f0;
     }
   
     textarea {
       	flex-grow: 1;
-      	padding: 0.5rem;
 		background-color: transparent;
+		margin-left: .2rem;
       	border: none;
-      	border-radius: 0.25rem;
 		outline: none;
       	resize: none;
       	overflow: auto;
-      	height: 2.7rem;
+      	height: 2rem;
       	max-height: 5.4rem;
     }
   
@@ -458,7 +471,7 @@
 	}
 
 	.chat-body::-webkit-scrollbar-track {
-	  	background: #f1f1f1;
+	  	background: var(--chat-body-bg);
 	  	border-radius: 10px;
 	}
 
