@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SvelteMarkdown from 'svelte-markdown';
 	import { X, MessageCircle, Trash } from "lucide-svelte";
+	import Paw from '@/icons/Paw.svelte';
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { chatStore } from '@/stores/chatStore';
@@ -188,7 +189,14 @@
     {#if isOpen}
 		<div class="chat-box" transition:fly={{ y: 200, opacity: 0, duration: 300 }}>
 			<div class="chat-header">
-				<h3>Lobo AI</h3>
+				<div class="title">
+					<svg class="lobo" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 60.42 54.9">
+						<polygon points="46.16 21.78 46.15 21.78 46.16 21.78 46.16 21.78"/>
+						<path d="M40.19,5.49c-.76,2.01-.07,3.88.25,5.78.7.2,1.41.39,2.11.58-1.22-3.23-2.32-6.46.42-9.8-2.58.71-4.5,1.71-5.76,2.99.08.85.17,1.71.25,2.56.64-1.17,1.24-2.44,2.74-2.12Z"/>
+						<path d="M59.79,21.9c-3.13-1.23-2.73-.09-11.5-5.11-3.18-2.66-7.11-4.89-12-6.57-.1-3.45-1.2-6.81-1.71-10.23-3.56,2.91-5.1,5.21-7.44,9.49-1.56-1.24-8.73-2.9-19.02,1.09,3.8.26,6.13.89,5.85,1.88C6.63,15.05,1.84,18.74,0,25.03c7.13-3.74,15.85-3.64,21.36-2.33-2.06,2.9-1.76,5.52-1.51,6.74-4.22-1.49-8.95-1.09-14.2-.1,2.89-.2,6.6,1.1,7.99,2.2-6.54,5.09-10.19,9.79-12.69,15.54,3.38-3.88,5.18-8.01,14.91-10.83-2.12,3.6-4.19,8-4.33,11.94,1.94-7.06,7.18-14.24,13.08-16.01-1.41-1.18-2.89-2.03-4.44-2.62,1.47-4.56,3.05-4.69,4.65-3.54-1.69,5.33,3.56,7.03,5.29,8.67-.87-1.96-4.84-5.92-1.47-6.61,5.73,1.54,6.83.17,9.11-.46-10.45.59-16.48-7.74-5.95-9.67.03-.73,10.2,2.16,14.36,3.83-1.67-.98-3.09-1.97-3.57-3.04.28.2.68,0,1.21-.61-1.95-.86-2.53-1.85-5.83-2.14.11.42.23.83.34,1.24-3.81-.9-7.63-1.81-11.44-2.71,1.35.8,2.1,1.65,1.96,2.59-3.32,1.52-5.47,3.18-6.84,4.79-4.35-1.81-12.06-1.56-17.32-.77.35-4.41,8.8-7.9,14.56-7.92-1.52-1.33-4.26-2.31-5.73-3.15,5.79-.9,13.48,1.96,17.15,5.06-1.29-1.61-2.66-3.17-2.51-5.42,1.54-3.28,3.29-4.49,5.03-5.79-1.17,2.19-2.24,3.64-3.41,5.83,2.44.01,1.74,2.07,2.56,2.62-.47-.49.17-1.74-.07-3.07-.16-1.58.47-3.15,1.89-4.72.78,1.89,1.26,3.75,1.08,5.56.18,1.47-.2,2.78-1.8,3.77,6.06-.86,10.62.19,13.01,4.01,3.22,1.64,6.45,3.27,9.67,4.91-.85.46-1.04.59-1.35.99,1.15,1.49,1.98,2.1,2.74,2.27-1.07,3.23-3.46,5.24-4.82,5.51-13.38,1.97-20.87,3.99-27.94,17.36-1.56-4.13-.64-8.1,1.18-12.02-6.87,7-4.15,12.58-.06,17.96,3.47-15.01,11.48-20.8,27.4-21.65,2.28-.82,9.29-9.68,6.54-11.35Z"/>
+					  </svg>
+					<h3>LobAI</h3>
+				</div>
 				<div>
 					<button on:click={clearHistory} aria-label="Borrar historial">
 						<Trash size={20} />
@@ -246,9 +254,7 @@
 				  		placeholder="Escribe tu mensaje..."
 					></textarea>
 					<button class="send-button" type="submit" disabled={isDisabled} aria-label="Enviar mensaje">
-						<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-							<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/>
-						</svg>  
+						<Paw size={"20px"} color={"white"} />
 					</button>
 				</form>
 			</div>
@@ -256,7 +262,8 @@
     {/if}
   
     <button class="chat-toggle" on:click={handleOpen}>
-      	<MessageCircle size={24} />
+		<Paw size={"16px"} color={"white"} />
+		Preguntar a LobAI
     </button>
 </div>
 
@@ -280,7 +287,7 @@
 		max-width: 25rem;
 	    overflow: hidden;
 	    position: absolute;
-	    bottom: 4.5rem;
+	    bottom: 3.2rem;
 	    right: 0;
 	}
   
@@ -301,6 +308,17 @@
 			cursor: pointer;
 	  	}
     }
+
+	.title {
+		display: flex;
+		flex-direction: row;
+		gap: .5rem;
+		align-items: center;
+	}
+
+	.lobo {
+		width: 2rem;
+	}
   
     .chat-body {
       	overflow-y: auto;
@@ -364,14 +382,12 @@
     }
   
 	.message-text-user {
-	    background-image: linear-gradient(to bottom, #c1278a 0%, rgba(244, 52, 52, 0.893) 30%, rgba(155, 7, 7, 0.859) 100%);
-		background-attachment: fixed;
+	    background-image: linear-gradient(to bottom, rgba(233, 43, 43, 0.893) 50%, rgba(227, 36, 36, 0.859) 100%);
 	    padding: 0.75rem;
 	    border-radius: 18px;
 	    max-width: 70%;
 	    color: white;
 		background-size: 100% 100%;
-	    border: 1px solid rgba(255, 255, 255, 0.1);
 	    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 	}
 
@@ -398,17 +414,18 @@
     }
   
 	.send-button {
-		background-color: var(--primary);
+		background-color: rgba(227, 36, 36, 0.859);
 		color: white;
-		padding: 0.4rem;
+		padding: 10px;
 		border-radius: 50%;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		transition: background-color 0.5s ease;
 		
 		&[disabled] {
-			background: var(--primary-hover);
+			background: rgb(157, 157, 157);
 			opacity: .8;
 			pointer-events: none;
 		}
@@ -417,21 +434,23 @@
     .send-button:hover {
       	background-color: var(--primary-hover);
     }
-
-	.send-button svg {
-		height: 1.7rem;
-		width: 1.7rem;
-	}
   
     .chat-toggle {
-      	background-color: var(--primary);
+      	background-image: linear-gradient(to bottom, rgba(233, 43, 43, 0.893) 50%, rgba(227, 36, 36, 0.859) 100%);
       	color: white;
-      	border-radius: 50%;
-      	padding: 1rem;
+      	border-radius: 25px;
+      	padding: .7rem 1.2rem;
       	cursor: pointer;
 	  	position: fixed;
       	bottom: 1rem;
       	right: 1rem;
+		display: flex;
+    	align-items: center;
+    	justify-content: center;
+    	gap: 0.4rem;
+		line-height: 1;
+		font-weight: 650;
+		transition: background .4s ease-in-out;
     }
   
     .chat-toggle:hover {
@@ -441,7 +460,7 @@
 	.waiting-indicator span {
 	    opacity: 0;
 	    animation: blink 1.5s infinite; /* La duración total de la animación */
-	}
+	} 
 
 	/* Animación para hacer parpadear los puntos */
 	@keyframes blink {
