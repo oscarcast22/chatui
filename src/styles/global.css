@@ -33,6 +33,7 @@ textarea {
 
 button {
 	all: unset;
+	box-sizing: border-box;
 }
 
 h3 {

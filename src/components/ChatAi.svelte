@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SvelteMarkdown from 'svelte-markdown';
-	import { X, MessageCircle, Trash } from "lucide-svelte";
+	import { X, Trash } from "lucide-svelte";
 	import Paw from '@/icons/Paw.svelte';
   	import { afterUpdate } from 'svelte';
 	import { fly } from 'svelte/transition';
@@ -197,12 +197,12 @@
 					  </svg>
 					<h3>LobAI</h3>
 				</div>
-				<div>
+				<div class="header-buttons">
 					<button on:click={clearHistory} aria-label="Borrar historial">
 						<Trash size={20} />
 					</button>
 					<button on:click={() => isOpen = false} aria-label="Cerrar chat">
-						<X size={20} />
+						<X size={24} />
 					</button>
 				</div>
 			</div>
@@ -222,7 +222,7 @@
 							</svg>
 						{/if}
 						<div 
-							class="message-text {message.role === 'user' ? 'message-text-user' : 'message-text-ia'}"
+							class="message-text {message.role === 'user' ? 'user-bubble' : 'ia-bubble'}"
 						>
 							{#if message.role === 'assistant'}
 								<SvelteMarkdown source={message.content} />
@@ -303,6 +303,7 @@
 			0 1px 2px rgba(0, 0, 0, .1),
 			0 -1px rgba(0, 0, 0, .1) inset,
 			0 2px 1px 1px rgba(255, 255, 255, .5) inset;
+		z-index: 0;
 
 	  	button {
 			cursor: pointer;
@@ -318,6 +319,32 @@
 
 	.lobo {
 		width: 2rem;
+	}
+
+	.header-buttons {
+		display: flex;
+		flex-direction: row;
+		gap: .5rem;
+		align-items: center;
+	}
+
+	.header-buttons button {
+    	display: flex;
+    	align-items: center;
+    	justify-content: center;
+		width: 29px;
+		height: 29px;
+    	padding: 2px;
+    	margin: 0;
+    	background: none;
+    	border: none;
+    	cursor: pointer;
+		border-radius: 4px;
+		transition: background-color .2s ease-in-out;
+	}
+
+	.header-buttons button:hover {
+		background-color: #f0f0f0;
 	}
   
     .chat-body {
@@ -367,21 +394,21 @@
       	border-radius: 18px;
     }
   
-    .message-text-ia {
+    .ia-bubble {
       	background-color: #f0f0f0;
       	color: #333;
 		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
-    :global(.message-text-ia > *:first-child) {
+    :global(.ia-bubble > *:first-child) {
         margin-top: 0;
     }
 
-    :global(.message-text-ia > *:last-child) {
+    :global(.ia-bubble > *:last-child) {
         margin-bottom: 0;
     }
   
-	.message-text-user {
+	.user-bubble {
 	    background-image: linear-gradient(to bottom, rgba(233, 43, 43, 0.893) 50%, rgba(227, 36, 36, 0.859) 100%);
 	    padding: 0.75rem;
 	    border-radius: 18px;
@@ -458,22 +485,27 @@
     }
 
 	.waiting-indicator span {
+		display: inline-block;
 	    opacity: 0;
+		transition: all .2s ease-in-out;
 	    animation: blink 1.5s infinite; /* La duración total de la animación */
 	} 
 
 	/* Animación para hacer parpadear los puntos */
 	@keyframes blink {
-	    0%, 20% {
-	        opacity: 0; /* Comienza invisible */
-	    }
-	    30%, 50% {
-	        opacity: 1; /* Visible en estos puntos */
-	    }
-	    100% {
-	        opacity: 0; /* Termina invisible */
-	    }
-	}
+    0%, 33% {
+        opacity: 0;
+        transform: translateY(5px) scale(0.5);
+    }
+    33%, 66% {
+        opacity: 1;
+        transform: translateY(0px) scale(1);
+    }
+    66%, 100% {
+        opacity: 0;
+        transform: translateY(5px) scale(0.5);
+    }
+}
 
 	/* Agregar un delay a cada punto */
 	.waiting-indicator span:nth-child(1) {
