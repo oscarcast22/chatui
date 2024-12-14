@@ -277,7 +277,6 @@
     
 	.chat-box {
 	    display: flex;
-		scroll-behavior: smooth;
 	    flex-direction: column;
 	    background-color: white;
 	    border-radius: 0.5rem;
@@ -459,7 +458,7 @@
 	}
   
     .send-button:hover {
-      	background-color: var(--primary-hover);
+      	background-color: rgba(211, 21, 21, 0.887);
     }
   
     .chat-toggle {
@@ -493,19 +492,19 @@
 
 	/* Animación para hacer parpadear los puntos */
 	@keyframes blink {
-    0%, 33% {
-        opacity: 0;
-        transform: translateY(5px) scale(0.5);
-    }
-    33%, 66% {
-        opacity: 1;
-        transform: translateY(0px) scale(1);
-    }
-    66%, 100% {
-        opacity: 0;
-        transform: translateY(5px) scale(0.5);
-    }
-}
+	    0%, 33% {
+	        opacity: 0;
+	        transform: translateY(5px) scale(0.5);
+	    }
+	    33%, 66% {
+	        opacity: 1;
+	        transform: translateY(0px) scale(1);
+	    }
+	    66%, 100% {
+	        opacity: 0;
+	        transform: translateY(5px) scale(0.5);
+	    }
+	}
 
 	/* Agregar un delay a cada punto */
 	.waiting-indicator span:nth-child(1) {
@@ -557,5 +556,5 @@
 	.chat-body::-webkit-scrollbar-thumb:hover {
 	  	background: #555;
 	}
-  </style>
+</style>
   

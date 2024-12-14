@@ -1,42 +1,54 @@
 <script lang="ts">
-    import { onMount, afterUpdate } from 'svelte';
+    import { onMount } from 'svelte';
     import { writable } from 'svelte/store';
-
 
     const endpoint = 'https://worker-ai-test.oscar-cm.workers.dev/notes';
 
     interface Note {
         id: string;
-        text: string;
+        campus: string;
+        nombre: string;
+        contenido: string;
     }
 
     const notes = writable<Note[]>([]);
 
+    // Variables para la nueva nota
+    let campus = "";
+    let nombre = "";
+    let contenido = "";
 
-    // Variable para la nota del usuario y para los mensajes de éxito/error
-    let noteText = "";
+    // Variables para editar notas
+    let isEditing = false;
+    let editingId: string | null = null;
+
     const responseMessage = writable("");
     const responseUpdate = writable("");
 
-    // Función para enviar la nota al backend
+    // Función para enviar la nota al backend (Agregar)
     async function submitNote() {
-        if (!noteText) {
-            responseMessage.set("Por favor ingresa una nota.");
+        if (!campus || !nombre || !contenido) {
+            responseMessage.set("Por favor llena todos los campos.");
             return;
         }
 
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
+            const method = isEditing ? 'PUT' : 'POST';
+            const url = isEditing ? `${endpoint}/${editingId}` : endpoint;
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ text: noteText })
+                body: JSON.stringify({ campus, nombre, contenido }),
             });
 
             if (response.ok) {
-                const data = await response.json();
-                responseMessage.set(`Nota agregada con éxito. ID: ${data.id}`);
+                const message = isEditing
+                    ? "Nota actualizada con éxito."
+                    : "Nota agregada con éxito.";
+                responseMessage.set(message);
             } else {
                 const errorText = await response.text();
                 responseMessage.set(`Error: ${errorText}`);
@@ -44,15 +56,20 @@
         } catch (error) {
             responseMessage.set("Error al conectar con el servidor");
         }
-        
-        // Limpia la nota después de enviarla
+
+        // Reinicia los valores después de guardar
         fetchNotes();
-        noteText = "";
+        campus = "";
+        nombre = "";
+        contenido = "";
+        isEditing = false;
+        editingId = null;
     }
 
+    // Función para cargar las notas desde el backend
     async function fetchNotes() {
         try {
-            const response = await fetch(`${endpoint}`);
+            const response = await fetch(endpoint);
             if (response.ok) {
                 const data = await response.json();
                 notes.set(data); // Actualiza las notas con los datos del servidor
@@ -64,14 +81,13 @@
         }
     }
 
-    async function deleteNote(id: number | string) {
+    // Función para eliminar una nota
+    async function deleteNote(id: string) {
         try {
             const response = await fetch(`${endpoint}/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
             });
-            console.log(response.status)
             if (response.ok) {
-                // Si la nota se eliminó con éxito, actualiza la lista
                 fetchNotes();
                 responseUpdate.set(`Nota con ID ${id} eliminada.`);
             } else {
@@ -82,11 +98,64 @@
         }
     }
 
+    // Función para cargar datos de una nota para edición
+    function editNote(note: Note) {
+        campus = note.campus;
+        nombre = note.nombre;
+        contenido = note.contenido;
+        editingId = note.id;
+        isEditing = true;
+    }
+
     onMount(() => {
         fetchNotes();
     });
-
 </script>
+
+<div class="note-section">
+    <h2>{isEditing ? "Editar Nota" : "Agregar una Nota"}</h2>
+    <input
+        class="input-field"
+        type="text"
+        placeholder="Campus"
+        bind:value={campus}
+    />
+    <input
+        class="input-field"
+        type="text"
+        placeholder="Nombre de la Nota"
+        bind:value={nombre}
+    />
+    <textarea
+        class="input-field"
+        placeholder="Contenido de la Nota"
+        bind:value={contenido}
+    ></textarea>
+    <button class="submit-button" on:click={submitNote}>
+        {isEditing ? "Guardar Cambios" : "Enviar Nota"}
+    </button>
+    <p>{$responseMessage}</p>
+</div>
+
+<div class="notes-section">
+    <h2>Lista de Notas</h2>
+    {#if $responseUpdate}
+        <p>{$responseUpdate}</p>
+    {/if}
+
+    <ul>
+        {#each $notes as note}
+            <li class="note-item">
+                <span><strong>Campus:</strong> {note.campus}</span>
+                <span><strong>Nombre:</strong> {note.nombre}</span>
+                <span><strong>Contenido:</strong> <pre>{note.contenido}</pre></span>
+                <button class="edit-button" on:click={() => editNote(note)}>Editar</button>
+                <button class="delete-button" on:click={() => deleteNote(note.id)}>Eliminar</button>
+            </li>
+        {/each}
+    </ul>
+</div>
+
 
 <style>
     .note-section {
@@ -111,44 +180,25 @@
     }
     .note-item {
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
         padding: 0.5rem 0;
         border-bottom: 1px solid #ccc;
     }
-    .delete-button {
-        color: red;
+    .note-item span {
+        margin: 0.2rem 0;
+    }
+    .delete-button, .edit-button {
         cursor: pointer;
         border: none;
         background: none;
         font-weight: bold;
+        align-self: flex-start;
+        margin-top: 0.5rem;
+    }
+    .delete-button {
+        color: red;
+    }
+    .edit-button {
+        color: blue;
     }
 </style>
-
-<div class="note-section">
-    <h2>Agregar una Nota</h2>
-    <textarea
-        class="input-field"
-        placeholder="Escribe tu nota aquí"
-        bind:value={noteText}
-    ></textarea>
-    <button class="submit-button" on:click={submitNote}>Enviar Nota</button>
-    
-    <p>{$responseMessage}</p>
-</div>
-
-<div class="notes-section">
-    <h2>Lista de Notas</h2>
-    {#if $responseUpdate}
-        <p>{$responseUpdate}</p>
-    {/if}
-    
-    <ul>
-        {#each $notes as note}
-            <li class="note-item">
-                <span>{note.id}</span>
-                <span>{note.text}</span>
-                <button class="delete-button" on:click={() => deleteNote(note.id)}>Eliminar</button>
-            </li>
-        {/each}
-    </ul>
-</div>
