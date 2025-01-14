@@ -8,7 +8,7 @@
 
 	let chatBody: HTMLElement;
 	let textArea: HTMLTextAreaElement;
-	let isOpen: boolean = true;
+	let isOpen: boolean = false;
 	let isDisabled: boolean = true;
 	let isProcessing: boolean = false;
 	let shouldAutoScroll: boolean = true;
