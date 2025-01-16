@@ -13,53 +13,44 @@
         contenido: string;
     }
 
-    // Convertimos los filtros a stores para garantizar la reactividad
+
     const filterCampus = writable('');
     const filterNombre = writable('');
+    const filterId = writable('');
     const notes = writable<Note[]>([]);
 
-    // Variables para la nueva nota
     let campus = "";
     let nombre = "";
     let contenido = "";
-
-    // Variables para editar notas
     let isEditing = false;
     let editingId: string | null = null;
 
     const responseMessage = writable("");
     const responseUpdate = writable("");
 
-    // Store derivado para las notas filtradas
     const filteredNotes = derived(
-        [notes, filterCampus, filterNombre],
-        ([$notes, $filterCampus, $filterNombre]) => {
+        [notes, filterCampus, filterNombre, filterId],
+        ([$notes, $filterCampus, $filterNombre, $filterId]) => {
+            if (!$notes) return [];
+            
             return $notes.filter(note => {
-                const matchCampus = note.campus.toLowerCase().includes($filterCampus.toLowerCase());
-                const matchNombre = note.nombre.toLowerCase().includes($filterNombre.toLowerCase());
+                if (!note) return false;
                 
-                // Si ambos filtros están vacíos, muestra todas las notas
-                if (!$filterCampus && !$filterNombre) return true;
+                const matchCampus = !$filterCampus || note.campus.toLowerCase().includes($filterCampus.toLowerCase());
+                const matchNombre = !$filterNombre || note.nombre.toLowerCase().includes($filterNombre.toLowerCase());
+                const matchId = !$filterId || String(note.id).toLowerCase().includes($filterId.toLowerCase());
                 
-                // Si solo hay filtro de campus
-                if ($filterCampus && !$filterNombre) return matchCampus;
-                
-                // Si solo hay filtro de nombre
-                if (!$filterCampus && $filterNombre) return matchNombre;
-                
-                // Si hay ambos filtros, debe cumplir ambos
-                return matchCampus && matchNombre;
+                return matchCampus && matchNombre && matchId;
             });
         }
     );
 
-    // Función para limpiar filtros
     function clearFilters() {
         filterCampus.set('');
         filterNombre.set('');
+        filterId.set('');
     }
 
-    // Función para enviar la nota al backend (Agregar)
     async function submitNote() {
         if (!campus || !nombre || !contenido) {
             responseMessage.set("Por favor llena todos los campos.");
@@ -83,7 +74,6 @@
                     ? "Nota actualizada con éxito."
                     : "Nota agregada con éxito.";
                 responseMessage.set(message);
-                // Limpiamos los filtros al agregar una nueva nota
                 clearFilters();
             } else {
                 const errorText = await response.text();
@@ -93,7 +83,6 @@
             responseMessage.set("Error al conectar con el servidor");
         }
 
-        // Reinicia los valores después de guardar
         fetchNotes();
         campus = "";
         nombre = "";
@@ -102,7 +91,6 @@
         editingId = null;
     }
 
-    // Función para cargar las notas desde el backend
     async function fetchNotes() {
         try {
             const response = await fetch(endpoint);
@@ -117,7 +105,6 @@
         }
     }
 
-    // Función para eliminar una nota
     async function deleteNote(id: string) {
         try {
             const response = await fetch(`${endpoint}/${id}`, {
@@ -134,7 +121,6 @@
         }
     }
 
-    // Función para cargar datos de una nota para edición
     function editNote(note: Note) {
         campus = note.campus;
         nombre = note.nombre;
@@ -194,7 +180,6 @@
     <div class="notes-section">
         <h2>Lista de Notas</h2>
         
-        <!-- Filtros -->
         <div class="filters">
             <div class="filter-group">
                 <input
@@ -209,7 +194,13 @@
                     placeholder="Filtrar por nombre..."
                     bind:value={$filterNombre}
                 />
-                {#if $filterCampus || $filterNombre}
+                <input 
+                    type="text"
+                    class="filter-input"
+                    placeholder="Filtrar por ID..."
+                    bind:value={$filterId}
+                />
+                {#if $filterCampus || $filterNombre || $filterId}
                     <button class="clear-button" on:click={clearFilters}>
                         Limpiar filtros
                     </button>
@@ -237,6 +228,7 @@
                         <button class="edit-button" on:click={() => editNote(note)}>Editar</button>
                         <button class="delete-button" on:click={() => deleteNote(note.id)}>Eliminar</button>
                     </div>
+                    <p class="note-id">ID: {note.id}</p>
                 </li>
             {/each}
         </ul>
@@ -379,6 +371,7 @@
         padding: 1rem;
         border: 1px solid #ccc;
         border-radius: 15px;
+        position: relative;
     }
 
     .note-item span {
@@ -405,6 +398,14 @@
 
     .edit-button {
         color: blue;
+    }
+
+    .note-id {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 1rem;
+        font-weight: 500;
     }
 
     @media screen and (max-width: 1080px) {
