@@ -1,9 +1,8 @@
 ---
 import '@/styles/global.css';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ChatAi from '@/components/ChatAi.svelte';
 ---
 
 <BaseLayout title="Chat UI" description="Chat-Widget for llm">
-	<ChatAi client:load/>
+	<script src="https://cdn.jsdelivr.net/gh/DisenoWebUAD/LobAi-widget/LobAi-widget.min.js"></script>
 </BaseLayout>

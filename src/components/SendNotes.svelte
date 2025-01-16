@@ -2,7 +2,9 @@
     import { onMount } from 'svelte';
     import { writable, derived } from 'svelte/store';
 
-    const endpoint = 'https://worker-ai-test.oscar-cm.workers.dev/notes';
+    // const endpoint = 'https://worker-ai-test.oscar-cm.workers.dev/notes';
+
+    const endpoint = 'https://lobai-worker.diseno-web2.workers.dev/notes';
 
     interface Note {
         id: string;
@@ -347,6 +349,9 @@
 
     .note-list {
         list-style: none;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
         padding: 0;
     }
 
@@ -371,8 +376,9 @@
     .note-item {
         display: flex;
         flex-direction: column;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #ccc;
+        padding: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 15px;
     }
 
     .note-item span {
@@ -399,5 +405,11 @@
 
     .edit-button {
         color: blue;
+    }
+
+    @media screen and (max-width: 1080px) {
+        .note-list {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
