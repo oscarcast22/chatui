@@ -1,11 +1,9 @@
 ---
 import '@/styles/global.css';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ChatAi from '@/components/ChatAi.svelte';
 import SendNotes from '@/components/SendNotes.svelte';
 ---
 
 <BaseLayout title="Chat UI Admin" description="Chat-Widget for llm">
 	<SendNotes client:load/>
-	<ChatAi client:load />
 </BaseLayout>

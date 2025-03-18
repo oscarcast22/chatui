@@ -9,6 +9,7 @@
     interface Note {
         id: string;
         campus: string;
+        ciudad: string | null;
         nombre: string;
         contenido: string;
     }
@@ -17,9 +18,11 @@
     const filterCampus = writable('');
     const filterNombre = writable('');
     const filterId = writable('');
+    const filterCiudad = writable('');
     const notes = writable<Note[]>([]);
 
     let campus = "";
+    let ciudad = "";
     let nombre = "";
     let contenido = "";
     let isEditing = false;
@@ -29,18 +32,19 @@
     const responseUpdate = writable("");
 
     const filteredNotes = derived(
-        [notes, filterCampus, filterNombre, filterId],
-        ([$notes, $filterCampus, $filterNombre, $filterId]) => {
+        [notes, filterCampus, filterNombre, filterId, filterCiudad],
+        ([$notes, $filterCampus, $filterNombre, $filterId, $filterCiudad]) => {
             if (!$notes) return [];
-            
+
             return $notes.filter(note => {
                 if (!note) return false;
-                
+
                 const matchCampus = !$filterCampus || note.campus.toLowerCase().includes($filterCampus.toLowerCase());
                 const matchNombre = !$filterNombre || note.nombre.toLowerCase().includes($filterNombre.toLowerCase());
                 const matchId = !$filterId || String(note.id).toLowerCase().includes($filterId.toLowerCase());
-                
-                return matchCampus && matchNombre && matchId;
+                const matchCiudad = !$filterCiudad || (note.ciudad && note.ciudad.toLowerCase().includes($filterCiudad.toLowerCase())); // <- Nuevo filtro
+
+                return matchCampus && matchNombre && matchId && matchCiudad;
             });
         }
     );
@@ -49,6 +53,7 @@
         filterCampus.set('');
         filterNombre.set('');
         filterId.set('');
+        filterCiudad.set('');
     }
 
     async function submitNote() {
@@ -66,7 +71,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ campus, nombre, contenido }),
+                body: JSON.stringify({ campus, ciudad, nombre, contenido }),
             });
 
             if (response.ok) {
@@ -85,6 +90,7 @@
 
         fetchNotes();
         campus = "";
+        ciudad = "";
         nombre = "";
         contenido = "";
         isEditing = false;
@@ -123,6 +129,7 @@
 
     function editNote(note: Note) {
         campus = note.campus;
+        ciudad = note.ciudad ? note.ciudad : "";
         nombre = note.nombre;
         contenido = note.contenido;
         editingId = note.id;
@@ -132,6 +139,7 @@
     function cancelEdit() {
         isEditing = false;
         campus = "";
+        ciudad = "";
         nombre = "";
         contenido = "";
         editingId = null;
@@ -150,6 +158,12 @@
             type="text"
             placeholder="Campus"
             bind:value={campus}
+        />
+        <input
+            class="input-field"
+            type="text"
+            placeholder="Ciudad"
+            bind:value={ciudad}
         />
         <input
             class="input-field"
@@ -188,6 +202,12 @@
                     placeholder="Filtrar por campus..."
                     bind:value={$filterCampus}
                 />
+                <input 
+                    type="text"
+                    class="filter-input"
+                    placeholder="Filtrar por ciudad..."
+                    bind:value={$filterCiudad}
+                />
                 <input
                     type="text"
                     class="filter-input"
@@ -200,7 +220,7 @@
                     placeholder="Filtrar por ID..."
                     bind:value={$filterId}
                 />
-                {#if $filterCampus || $filterNombre || $filterId}
+                {#if $filterCampus || $filterNombre || $filterId || $filterCiudad}
                     <button class="clear-button" on:click={clearFilters}>
                         Limpiar filtros
                     </button>
@@ -220,6 +240,9 @@
                 <li class="note-item">
                     <span><strong>Campus:</strong> {note.campus}</span>
                     <span><strong>Nombre:</strong> {note.nombre}</span>
+                    {#if note.ciudad}
+                        <span><strong>Ciudad:</strong> {note.ciudad}</span>
+                    {/if}
                     <span>
                         <strong>Contenido:</strong>
                         <pre>{note.contenido}</pre>

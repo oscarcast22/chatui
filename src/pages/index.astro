@@ -4,5 +4,163 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Chat UI" description="Chat-Widget for llm">
-	<script src="https://cdn.jsdelivr.net/gh/DisenoWebUAD/LobAi-widget/LobAi-widget.min.js"></script>
+	<!-- <script src="https://cdn.jsdelivr.net/gh/DisenoWebUAD/LobAi-widget/LobAi-widget.min.js"></script> -->
+	 <div class="widget">
+		<div class="button-container">
+			<pixel-canvas data-colors="#fecdd3, #fda4af, #e11d48" data-gap="8" data-speed="65"></pixel-canvas>
+			<button class="button-text">
+				<p>Preguntar a LobAi</p>
+			</button>
+		</div>
+	 </div>
+
 </BaseLayout>
+
+<style>
+	.widget {
+		position: fixed;
+		bottom: 50px;
+		right: 10px;
+		width: max-content;
+		height: max-content;
+		--bg: rgba(233, 43, 43, 0.89);
+		--surface-1: rgba(223, 23, 23, 0.89);
+		--active-color: #ff5367;
+
+		--space: 1rem;
+  		--fg: #e3e3e3;
+  		--surface-2: rgba(197, 22, 22, 0.89);
+  		--surface-3: #52525b;
+  		--ease-out: cubic-bezier(0.5, 1, 0.89, 1);
+  		--ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+	}
+
+	.chat-toggle {
+      	background-image: linear-gradient(to bottom, rgba(238, 39, 39, 0.893) 50%, rgba(227, 36, 36, 0.859) 100%);
+      	color: white;
+      	border-radius: 25px;
+      	padding: .7rem 1.2rem;
+      	cursor: pointer;
+	  	position: fixed;
+      	bottom: 1rem;
+      	right: 1rem;
+		display: flex;
+    	align-items: center;
+    	justify-content: center;
+    	gap: 0.4rem;
+		line-height: 1;
+		transition: background .4s ease-in-out;
+    }
+  
+    .chat-toggle:hover {
+      	background-color: var(--primary-hover);
+    }
+
+	.button-container {
+		position: relative;
+		cursor: pointer;
+		overflow: hidden;
+		display: grid;
+		grid-template-areas: "card";
+		place-items: center;
+		border: 1px solid var(--surface-2);
+		isolation: isolate;
+		transition: border-color 200ms var(--ease-out);
+		user-select: none;
+		border-radius: 25px;
+		background-color: var(--bg);
+		color: white;
+		line-height: 1;
+		font-weight: 500;
+		width: 208px;
+		height: 40px;
+
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			background: radial-gradient(
+			ellipse at bottom left,
+			transparent 55%,
+			var(--surface-1)
+			);
+			pointer-events: none;
+			box-shadow: var(--bg) -0.5cqi 0.5cqi 2.5cqi inset;
+			transition: opacity 900ms var(--ease-out);
+		}
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			margin: auto;
+			background: radial-gradient(ellipse, var(--bg), transparent 65%);
+			opacity: 0;
+			transition: opacity 800ms var(--ease-out);
+		}
+
+		> * {
+			grid-area: card;
+		}
+
+		svg {
+			position: relative;
+			z-index: 1;
+			width: 30%;
+			height: auto;
+			color: var(--surface-3);
+			transition: 300ms var(--ease-out);
+			transition-property: color, scale;
+		}
+
+		/* &:focus-within {
+			outline: 5px auto Highlight;
+			outline: 5px auto -webkit-focus-ring-color;
+		} */
+
+		&:where(:hover, :focus-within) {
+			border-color: var(--active-color, var(--fg));
+			transition: border-color 800ms var(--ease-in-out);
+		}
+
+		&:where(:hover, :focus-within) svg {
+			color: var(--active-color, var(--fg));
+			scale: 1.1;
+			transition: 300ms var(--ease-in-out);
+		}
+
+		&:where(:hover, :focus-within)::before {
+			opacity: 0;
+		}
+
+		&:where(:hover, :focus-within)::after {
+			opacity: 1;
+		}
+
+	}
+
+	.button-text {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		gap: .5rem;
+		width: 100%;
+		height: 100%;
+		padding: 0;
+		border: none;
+		background: none;
+	}
+	p {
+		font-weight: 500;
+		transition: transform .2s ease-in-out;
+		font-size: 16px;
+		margin: 0;
+	}
+
+	.button-text:hover p {
+		transform: scale(1.05);
+	}
+</style>
